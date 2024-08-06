@@ -10,7 +10,7 @@ void Menu::loop(Buttons &buttons) {
   // Reset the change value in every case.  We don't always change the state though.
   change = 0;
   state_changed = false;
-  
+
   // Early out for idle state, which will be most of the time.
   if (state == idle && left_state == Button::idle && right_state == Button::idle && mode_state == Button::idle) {
     // Everything is idle.
@@ -24,9 +24,10 @@ void Menu::loop(Buttons &buttons) {
     state_changed = true;
     return;
   }
-  
+
   // Menu is idle. A button is pressed, go into the menu, but don't act on the button press. It just wakes up the menu.
-  if (state == idle && (left_state == Button::down_edge || right_state == Button::down_edge || mode_state == Button::down_edge)) {
+  //if (state == idle && (left_state == Button::down_edge || right_state == Button::down_edge || mode_state == Button::down_edge)) {
+  if (state == idle && (mode_state == Button::down_edge)) {
     state = states(1);  // Start at the beginning of the menu.
 
     millis_last_button_press = millis();

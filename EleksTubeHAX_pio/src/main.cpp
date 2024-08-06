@@ -49,8 +49,8 @@ uint8_t       yesterday       = 0;
 // Helper function, defined below.
 void updateClockDisplay(TFTs::show_t show=TFTs::yes);
 void setupMenu(void);
-void dimClock(bool loopUpdate=false);
-void undimClock(bool loopUpdate=false);
+void dimClock();
+void undimClock();
 void EveryFullHour(bool loopUpdate=false);
 void UpdateDstEveryNight(void);
 #ifdef HARDWARE_NovelLife_SE_CLOCK // NovelLife_SE Clone XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -197,24 +197,39 @@ void loop() {
 #endif // NovelLife_SE Clone XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
   // Power button: If in menu, exit menu. Else turn off displays and backlight.
-  if (buttons.power.isDownEdge() && (menu.getState() == Menu::idle)) {
-    if (backlights.dimming) {
-        tfts.chip_select.setAll();
-        tfts.fillScreen(TFT_BLACK);
-
-        tfts.toggleAllDisplays();
-        if (tfts.isEnabled()) {
-    #if  !defined(HARDWARE_SI_HAI_CLOCK) && !defined(HARDWARE_Elekstube_CLOCK_Gen2)
-            tfts.reinit();  // reinit (original EleksTube HW: after a few hours in OFF state the displays do not wake up properly)
-    #endif
+  if (menu.getState() == Menu::idle){
+      if (buttons.power.isDownEdge()) {
+        if (backlights.dimming) {
             tfts.chip_select.setAll();
-            undimClock();
+            tfts.fillScreen(TFT_BLACK);
+
+            tfts.toggleAllDisplays();
+            if (tfts.isEnabled()) {
+        #if  !defined(HARDWARE_SI_HAI_CLOCK) && !defined(HARDWARE_Elekstube_CLOCK_Gen2)
+                tfts.reinit();  // reinit (original EleksTube HW: after a few hours in OFF state the displays do not wake up properly)
+        #endif
+                tfts.chip_select.setAll();
+                undimClock();
+                updateClockDisplay(TFTs::force);
+            }
+            backlights.togglePower();
+        } else {
+            dimClock();
+            updateClockDisplay(TFTs::force);
         }
-        backlights.togglePower();
-    } else {
-        dimClock();
-    }
+      }
+      if (buttons.left.isDownEdge()){
+          uclock.adjustClockGraphicsIdx(1);
+          if(tfts.current_graphic != uclock.getActiveGraphicIdx()) {
+            tfts.current_graphic = uclock.getActiveGraphicIdx();
+            updateClockDisplay(TFTs::force);   // redraw everything
+          }
+      }
+      if (buttons.right.isDownEdge()){
+          backlights.setNextPattern(1);
+      }
   }
+
 
   menu.loop(buttons);  // Must be called after buttons.loop()
   backlights.loop();
@@ -516,24 +531,19 @@ bool isNightTime(uint8_t current_hour) {
     }
 }
 
-void dimClock(bool loopUpdate) {
+void dimClock() {
     Serial.println("Setting night mode (dimmed)");
     tfts.dimming = TFT_DIMMED_INTENSITY;
     tfts.InvalidateImageInBuffer(); // invalidate; reload images with new dimming value
     backlights.dimming = true;
-    if (menu.getState() == Menu::idle || !loopUpdate) { // otherwise erases the menu
-      updateClockDisplay(TFTs::force); // update all
-    }
+
 }
 
-void undimClock(bool loopUpdate) {
+void undimClock() {
     Serial.println("Setting daytime mode (normal brightness)");
     tfts.dimming = 255; // 0..255
     tfts.InvalidateImageInBuffer(); // invalidate; reload images with new dimming value
     backlights.dimming = false;
-    if (menu.getState() == Menu::idle || !loopUpdate) { // otherwise erases the menu
-      updateClockDisplay(TFTs::force); // update all
-    }
 }
 
 void EveryFullHour(bool loopUpdate) {
@@ -544,9 +554,12 @@ void EveryFullHour(bool loopUpdate) {
   Serial.print("current hour = ");
   Serial.println(current_hour);
     if (isNightTime(current_hour)) {
-      dimClock(loopUpdate);
+      dimClock();
     } else {
-      undimClock(loopUpdate);
+      undimClock();
+    }
+    if ((menu.getState() == Menu::idle || !loopUpdate) && tfts.isEnabled()) { // otherwise erases the menu
+      updateClockDisplay(TFTs::force); // update all
     }
     hour_old = current_hour;
   }
