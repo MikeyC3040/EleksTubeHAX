@@ -8,6 +8,6 @@
 # Name,   Type, SubType, Offset,  Size, Flags
 # partition table          0x0000,   0x9000,  <- automatically generated, do not un-comment.
 nvs,      data, nvs,       0x9000,   0x7000,
-app0,     app,  factory,  0x10000, 0x120000,
-spiffs,   data, spiffs,  0x130000, 0x2D0000,
+app0,     app,  factory,  0x10000, 0x100000,
+spiffs,   data, spiffs,  0x110000, 0x2F0000,
 # end of 4 MB flash      0x400000
